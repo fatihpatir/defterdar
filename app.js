@@ -1,15 +1,29 @@
 // Core State
 let appData = JSON.parse(localStorage.getItem('defterdar_v2')) || {
     settings: { schoolStart: '2024-09-16' },
-    plans: []
+    plans: [],
+    schedules: []
 };
 
-// Force fix if user has old bad default
+// Data Migrations & Fixes
+if (!appData.schedules) appData.schedules = [];
+if (appData.scheduleImg) {
+    appData.schedules.push({
+        id: Date.now(),
+        name: 'Ders Programı',
+        img: appData.scheduleImg
+    });
+    delete appData.scheduleImg;
+    localStorage.setItem('defterdar_v2', JSON.stringify(appData));
+}
+
 if (!localStorage.getItem('defterdar_16sept_fix_v2')) {
     appData.settings.schoolStart = '2024-09-16';
     localStorage.setItem('defterdar_v2', JSON.stringify(appData));
     localStorage.setItem('defterdar_16sept_fix_v2', 'true');
 }
+
+let activeScheduleIdx = -1; // To track which schedule is being viewed
 
 let currentWeek = 1;
 let rawData = [];
@@ -41,13 +55,14 @@ function isIos() {
 window.onload = () => {
     updateDateDisplay();
     renderDashboard();
-    loadSchedule();
     applyTheme(appData.settings.theme || 'premium');
 
     // Bind global detail buttons once
     document.getElementById('viewFullBtn').onclick = () => viewFullPlan(activeLessonIdx);
     document.getElementById('deleteBtn').onclick = () => deletePlan(activeLessonIdx);
     document.getElementById('editLessonNameBtn').onclick = editLessonName;
+    document.getElementById('deleteScheduleBtn').onclick = deleteSchedule;
+    document.getElementById('editScheduleNameBtn').onclick = editScheduleName;
 
     // Check iOS PWA Install Button Visibility
     const installBtn = document.getElementById('install-pwa-btn');
@@ -55,12 +70,13 @@ window.onload = () => {
         installBtn.style.display = 'flex';
     }
 
-    // Schedule Touch Zoom Logic
+    // Schedule Pinch-to-Zoom Logic
     let touchStartDist = 0;
     let initialScale = 1;
     const schedImg = document.getElementById('scheduleImg');
+    const schedContainer = document.getElementById('scheduleImageContainer');
 
-    document.getElementById('scheduleImageContainer').addEventListener('touchstart', (e) => {
+    schedContainer.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
             touchStartDist = Math.hypot(
@@ -71,7 +87,7 @@ window.onload = () => {
         }
     }, { passive: false });
 
-    document.getElementById('scheduleImageContainer').addEventListener('touchmove', (e) => {
+    schedContainer.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2) {
             e.preventDefault();
             const dist = Math.hypot(
@@ -79,8 +95,10 @@ window.onload = () => {
                 e.touches[0].pageY - e.touches[1].pageY
             );
             const delta = dist / touchStartDist;
-            scheduleZoom = Math.min(Math.max(0.5, initialScale * delta), 4);
-            schedImg.style.transform = `scale(${scheduleZoom})`;
+            scheduleZoom = Math.min(Math.max(1, initialScale * delta), 5);
+
+            // Apply scale
+            schedImg.style.width = (scheduleZoom * 100) + '%';
         }
     }, { passive: false });
 };
@@ -141,8 +159,47 @@ function resetToToday() {
 
 // 🎨 Render Functions
 function renderDashboard() {
+    renderScheduleList();
+    renderPlanList();
+}
+
+function renderScheduleList() {
+    const list = document.getElementById('scheduleList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (appData.schedules.length === 0) {
+        list.innerHTML = `
+            <div class="card" style="text-align: center; padding: 25px; border: 2px dashed var(--border); background: none; opacity: 0.6;">
+                <p style="font-size: 13px; color: var(--text-sub);">Henüz program yüklenmemiş.</p>
+            </div>
+        `;
+        return;
+    }
+
+    appData.schedules.forEach((s, idx) => {
+        const item = document.createElement('div');
+        item.className = 'card';
+        item.style = "padding: 20px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 1px solid var(--border); margin-bottom: 5px;";
+        item.onclick = () => openSchedule(idx);
+        item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 50px; height: 50px; background: var(--primary-grad); color: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 24px;">🗓️</div>
+                <div>
+                    <div style="font-weight: 800; font-size: 16px; color: var(--text-main);">${s.name}</div>
+                    <div style="font-size: 12px; color: var(--text-sub);">Haftalık Ders Programı</div>
+                </div>
+            </div>
+            <div style="font-size: 22px; color: var(--primary);">›</div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function renderPlanList() {
     const list = document.getElementById('activePlansList');
     const empty = document.getElementById('dashboardEmpty');
+    if (!list) return;
     list.innerHTML = '';
 
     if (appData.plans.length === 0) {
@@ -158,13 +215,13 @@ function renderDashboard() {
         card.onclick = () => openLessonDetail(idx);
         card.innerHTML = `
             <div style="display:flex; align-items:center; gap:16px;">
-                <div style="width:50px; height:50px; background:var(--primary-glow); border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:24px;">📚</div>
-                <div>
-                    <div style="font-weight:700; font-size:17px; color:var(--text-main);">${plan.name}</div>
-                    <div style="font-size:13px; color:var(--text-sub);">${plan.data.length} kazanım yüklü</div>
+                <div style="width:50px; height:50px; background:var(--primary-grad); border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:24px; color:white;">📚</div>
+                <div style="flex:1;">
+                    <div style="font-weight:800; font-size:16px; color:var(--text-main);">${plan.name}</div>
+                    <div style="font-size:12px; color:var(--text-sub);">${plan.data.length} kazanım yüklü</div>
                 </div>
+                <div style="color: var(--primary); font-weight: 900; font-size: 22px;">›</div>
             </div>
-            <div style="color:var(--text-sub); font-size:24px; font-weight:300;">›</div>
         `;
         list.appendChild(card);
     });
@@ -305,12 +362,18 @@ async function parseExcel(file) {
     rawData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
 }
 
-function openSchedule() {
+function openSchedule(idx) {
+    activeScheduleIdx = idx;
+    const s = appData.schedules[idx];
+    document.getElementById('scheduleModalTitle').innerText = s.name;
+    document.getElementById('scheduleImg').src = s.img;
+    resetZoomSchedule();
     document.getElementById('scheduleModal').classList.remove('hidden');
 }
 
 function closeSchedule() {
     document.getElementById('scheduleModal').classList.add('hidden');
+    activeScheduleIdx = -1;
 }
 
 function uploadSchedule(input) {
@@ -320,42 +383,46 @@ function uploadSchedule(input) {
     const reader = new FileReader();
     reader.onload = (e) => {
         const base64 = e.target.result;
-        appData.scheduleImg = base64;
+        const name = prompt("Bu program için bir isim girin (Örn: Korkuteli Lisesi, Pazartesi Grubu vb.):", "Haftalık Program");
+        if (!name) return;
+
+        appData.schedules.push({
+            id: Date.now(),
+            name: name,
+            img: base64
+        });
         saveAll();
-        loadSchedule();
+        renderDashboard();
     };
     reader.readAsDataURL(file);
 }
 
-function loadSchedule() {
-    const img = document.getElementById('scheduleImg');
-    const placeholder = document.getElementById('schedulePlaceholder');
-    const container = document.getElementById('scheduleImageContainer');
-    const controls = document.getElementById('scheduleZoomControls');
-    const changeBtn = document.getElementById('scheduleChangeBtn');
-
-    if (appData.scheduleImg) {
-        img.src = appData.scheduleImg;
-        placeholder.classList.add('hidden');
-        container.classList.remove('hidden');
-        controls.classList.remove('hidden');
-        changeBtn.classList.remove('hidden');
-    } else {
-        placeholder.classList.remove('hidden');
-        container.classList.add('hidden');
-        controls.classList.add('hidden');
-        changeBtn.classList.add('hidden');
+function deleteSchedule() {
+    if (activeScheduleIdx === -1) return;
+    if (confirm("Bu programı silmek istediğine emin misin Hocam?")) {
+        appData.schedules.splice(activeScheduleIdx, 1);
+        saveAll();
+        closeSchedule();
+        renderDashboard();
+        alert("Program silindi.");
     }
 }
 
-function zoomSchedule(delta) {
-    scheduleZoom = Math.min(Math.max(0.5, scheduleZoom + delta), 3);
-    document.getElementById('scheduleImg').style.transform = `scale(${scheduleZoom})`;
+function editScheduleName() {
+    if (activeScheduleIdx === -1) return;
+    const oldName = appData.schedules[activeScheduleIdx].name;
+    const newName = prompt("Programın ismini düzenle Hocam:", oldName);
+    if (newName && newName !== oldName) {
+        appData.schedules[activeScheduleIdx].name = newName;
+        document.getElementById('scheduleModalTitle').innerText = newName;
+        saveAll();
+        renderDashboard();
+    }
 }
 
 function resetZoomSchedule() {
     scheduleZoom = 1;
-    document.getElementById('scheduleImg').style.transform = `scale(1)`;
+    document.getElementById('scheduleImg').style.width = '100%';
 }
 
 // 🎨 Theme System

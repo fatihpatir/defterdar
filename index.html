@@ -48,32 +48,48 @@
         </header>
 
         <main id="main-content">
-            <!-- Subject List -->
+            <!-- Dashboard View -->
             <div id="view-dashboard" class="content-view">
 
-                <div class="card" onclick="openSchedule()"
-                    style="background: var(--primary-grad); color: white; cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);">
-                    <div>
-                        <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 5px;">Haftalık Ders Programı</h2>
-                        <p style="font-size: 13px; opacity: 0.9;">Görmek veya yüklemek için dokun</p>
+                <!-- Section: Weekly Schedules -->
+                <div style="margin-bottom: 35px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2 style="font-size: 18px; font-weight: 900; color: var(--text-main);">🗓️ Haftalık Programlar
+                        </h2>
+                        <button
+                            onclick="document.getElementById('schedule-upload-new').value=''; document.getElementById('schedule-upload-new').click()"
+                            class="btn-ghost"
+                            style="padding: 5px 12px; font-size: 12px; border: 1px solid var(--border); border-radius: 10px;">+
+                            EKLE</button>
+                        <input type="file" id="schedule-upload-new" accept="image/*" style="display:none"
+                            onchange="uploadSchedule(this)">
                     </div>
-                    <div style="font-size: 32px;">📅</div>
+                    <div id="scheduleList" style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+                        <!-- Schedules will be rendered here -->
+                    </div>
                 </div>
 
-                <!-- Add Button Moved to Dashboard List -->
-                <button onclick="openWizard()" class="btn btn-primary"
-                    style="width: 100%; margin-bottom: 25px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                    <span style="font-size: 22px;">+</span> YENİ DERS/PLAN EKLE
-                </button>
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 30px 0; opacity: 0.5;">
 
-                <div id="dashboardEmpty" class="card hidden" style="text-align: center; padding: 60px 20px;">
-                    <div style="font-size: 60px; margin-bottom: 20px;">📚</div>
-                    <h2>Hoş Geldiniz</h2>
-                    <p style="color: var(--text-sub); margin-top: 10px;">Yıllık planınızı yüklemek için yukarıdaki "Yeni
-                        Ders Ekle" butonuna
-                        basın.</p>
+                <!-- Section: Annual Plans -->
+                <div>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h2 style="font-size: 18px; font-weight: 900; color: var(--text-main);">📚 Yıllık Planlar</h2>
+                        <button onclick="openWizard()" class="btn-ghost"
+                            style="padding: 5px 12px; font-size: 12px; border: 1px solid var(--border); border-radius: 10px;">+
+                            EKLE</button>
+                    </div>
+
+                    <div id="dashboardEmpty" class="card hidden" style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 50px; margin-bottom: 15px;">📖</div>
+                        <h3 style="font-size: 16px;">Henüz Plan Yok</h3>
+                        <p style="color: var(--text-sub); margin-top: 8px; font-size: 13px;">Yıllık planınızı yüklemek
+                            için yukarıdaki "+ EKLE" butonuna basın.</p>
+                    </div>
+                    <div id="activePlansList"></div>
                 </div>
-                <div id="activePlansList"></div>
             </div>
 
             <!-- Detail View -->
@@ -220,35 +236,23 @@
             <div id="scheduleModal" class="modal hidden">
                 <div class="modal-content"
                     style="max-width: 600px; height: 90vh; display: flex; flex-direction: column; padding: 25px;">
-                    <h3 style="text-align: center; margin-bottom: 15px;">Haftalık Programım</h3>
-
-                    <div id="schedulePlaceholder"
-                        style="padding: 40px; text-align: center; border: 2px dashed var(--border); border-radius: 20px; margin: 20px 0; flex: 1; display: flex; flex-direction: column; justify-content: center; cursor: pointer;"
-                        onclick="document.getElementById('schedule-upload').click()">
-                        <div style="font-size: 40px;">📸</div>
-                        <p style="font-size: 13px; color: var(--text-sub); margin-top: 10px;">Ders programı görseli
-                            yükleyin.</p>
-                        <input type="file" id="schedule-upload" accept="image/*" style="display:none"
-                            onchange="uploadSchedule(this)">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 id="scheduleModalTitle" style="text-align: center; margin-bottom: 0;">Haftalık Program</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="editScheduleNameBtn"
+                                style="background:none; border:none; font-size: 18px; cursor: pointer;">✏️</button>
+                            <button id="deleteScheduleBtn"
+                                style="background:none; border:none; font-size: 18px; cursor: pointer;">🗑️</button>
+                        </div>
                     </div>
 
-                    <div id="scheduleImageContainer" class="hidden"
-                        style="flex: 1; overflow: auto; position: relative; border-radius: 20px; border: 1px solid var(--border); touch-action: none;">
-                        <img id="scheduleImg"
-                            style="transform-origin: top left; transition: transform 0.1s ease-out; width: 100%;">
+                    <div id="scheduleImageContainer"
+                        style="flex: 1; overflow: auto; position: relative; border-radius: 20px; border: 1px solid var(--border); touch-action: auto; background: #000;">
+                        <img id="scheduleImg" style="transform-origin: top left; width: 100%;">
                     </div>
 
-                    <div id="scheduleZoomControls" class="zoom-controls hidden" style="margin-top: 15px;">
-                        <button class="btn btn-ghost" onclick="zoomSchedule(-0.2)">➖</button>
-                        <button class="btn btn-ghost" onclick="resetZoomSchedule()">Sıfırla</button>
-                        <button class="btn btn-ghost" onclick="zoomSchedule(0.2)">➕</button>
-                    </div>
-
-                    <button id="scheduleChangeBtn" class="btn btn-ghost hidden"
-                        style="width:100%; margin-top:15px; font-size:12px;"
-                        onclick="document.getElementById('schedule-upload').click()">FOTOĞRAFI DEĞİŞTİR</button>
-
-                    <button class="btn btn-ghost" style="width: 100%; margin-top: 15px;"
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 15px;"
                         onclick="closeSchedule()">KAPAT</button>
                 </div>
             </div>
