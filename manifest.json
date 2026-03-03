@@ -1,0 +1,17 @@
+{
+  "name": "Defterdar - Plan Takip",
+  "short_name": "Defterdar",
+  "description": "Yıllık plan ve kazanım takip uygulaması.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#1e40af",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
