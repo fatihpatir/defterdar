@@ -1,41 +1,37 @@
 :root {
-    /* Ultra-Premium Glass & Gradient Design System */
-    --primary: #6366f1;
-    --primary-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-    --bg-grad: radial-gradient(circle at top right, #f8fafc 0%, #e2e8f0 100%);
-    --card-bg: rgba(255, 255, 255, 0.7);
-    --text-main: #0f172a;
-    --text-sub: #64748b;
-    --border: rgba(255, 255, 255, 0.5);
-    --shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+    /* 1. Light (Açık - Ferah) */
+    --primary: #2563eb;
+    --primary-grad: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+    --bg-grad: #f4f4f5;
+    --card-bg: #ffffff;
+    --text-main: #18181b;
+    --text-sub: #52525b;
+    --border: #e4e4e7;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="dark"] {
-    --primary: #38bdf8;
-    --primary-grad: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
-    --bg-grad: radial-gradient(circle at top right, #020617 0%, #0f172a 100%);
-    --card-bg: rgba(15, 23, 42, 0.7);
-    --text-main: #f1f5f9;
-    --text-sub: #94a3b8;
-    --border: rgba(255, 255, 255, 0.05);
+    /* 2. Dark (Gece - Modern) */
+    --primary: #3b82f6;
+    --primary-grad: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+    --bg-grad: #09090b;
+    --card-bg: #18181b;
+    --text-main: #f4f4f5;
+    --text-sub: #a1a1aa;
+    --border: #27272a;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-[data-theme="nature"] {
-    --primary: #10b981;
-    --primary-grad: linear-gradient(135deg, #059669 0%, #34d399 100%);
-    --bg-grad: radial-gradient(circle at top right, #f0fdf4 0%, #dcfce7 100%);
-    --card-bg: rgba(255, 255, 255, 0.7);
-    --text-main: #064e3b;
-    --text-sub: #065f46;
-}
-
-[data-theme="pastel"] {
-    --primary: #fb7185;
-    --primary-grad: linear-gradient(135deg, #f43f5e 0%, #fb923c 100%);
-    --bg-grad: radial-gradient(circle at top right, #fff1f2 0%, #ffe4e6 100%);
-    --card-bg: rgba(255, 255, 255, 0.7);
-    --text-main: #881337;
-    --text-sub: #9f1239;
+[data-theme="gold"] {
+    /* 3. Gold (Lüks - Siyah & Altın) */
+    --primary: #d4af37;
+    --primary-grad: linear-gradient(135deg, #996515 0%, #facc15 100%);
+    --bg-grad: #1c1917;
+    --card-bg: #292524;
+    --text-main: #fefce8;
+    --text-sub: #d6d3d1;
+    --border: #44403c;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -51,6 +47,8 @@ body {
     color: var(--text-main);
     min-height: 100vh;
     overflow-x: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 .app-container {
@@ -58,7 +56,7 @@ body {
 }
 
 main {
-    padding: 20px 20px 140px;
+    padding: 20px 20px 40px;
     max-width: 600px;
     margin: 0 auto;
     width: 100%;
@@ -66,12 +64,15 @@ main {
 
 /* Glass Header */
 header {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.6);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    padding: 30px 20px;
+    padding: 15px 20px;
     border-bottom: 1px solid var(--border);
     margin-bottom: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 header h1 {
@@ -154,63 +155,7 @@ header h1 {
     box-shadow: 0 8px 15px -5px rgba(99, 102, 241, 0.3);
 }
 
-/* Bottom Nav - Floating */
-.bottom-nav {
-    position: fixed;
-    bottom: 25px;
-    left: 20px;
-    right: 20px;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 35px;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 0 20px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
-    z-index: 1000;
-}
-
-.nav-item {
-    padding: 12px;
-    border-radius: 20px;
-    transition: 0.3s;
-    color: var(--text-sub);
-    font-size: 24px;
-    cursor: pointer;
-}
-
-.nav-item.active {
-    background: var(--primary-grad);
-    color: white;
-    box-shadow: 0 8px 15px -5px rgba(99, 102, 241, 0.4);
-}
-
-#nav-fab {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60px;
-    height: 60px;
-    background: var(--primary-grad);
-    border-radius: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 30px;
-    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
-    cursor: pointer;
-    z-index: 1001;
-}
-
-#nav-fab:active {
-    transform: translateX(-50%) scale(0.9);
-}
+/* Removed Bottom Nav CSS */
 
 /* Modal - Smooth Transitions */
 .modal {
@@ -252,15 +197,14 @@ header h1 {
 .table-responsive {
     overflow: auto;
     -webkit-overflow-scrolling: touch;
-    max-height: 450px;
-    border-radius: 24px;
-    border: 1px solid var(--border);
-    background: rgba(255, 255, 255, 0.2);
+    width: 100%;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
 }
 
 td,
@@ -341,7 +285,7 @@ input:focus {
 
 .theme-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-bottom: 25px;
 }

@@ -1,8 +1,15 @@
 // Core State
 let appData = JSON.parse(localStorage.getItem('defterdar_v2')) || {
-    settings: { schoolStart: '2026-02-16' },
+    settings: { schoolStart: '2024-09-16' },
     plans: []
 };
+
+// Force fix if user has old bad default
+if (!localStorage.getItem('defterdar_16sept_fix_v2')) {
+    appData.settings.schoolStart = '2024-09-16';
+    localStorage.setItem('defterdar_v2', JSON.stringify(appData));
+    localStorage.setItem('defterdar_16sept_fix_v2', 'true');
+}
 
 let currentWeek = 1;
 let rawData = [];
@@ -19,8 +26,16 @@ window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     const installBtn = document.getElementById('install-pwa-btn');
-    if (installBtn) installBtn.style.display = 'block';
+    if (installBtn && !isStandalone()) installBtn.style.display = 'flex';
 });
+
+function isStandalone() {
+    return !!(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone);
+}
+
+function isIos() {
+    return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+}
 
 // Initialization
 window.onload = () => {
@@ -32,7 +47,49 @@ window.onload = () => {
     // Bind global detail buttons once
     document.getElementById('viewFullBtn').onclick = () => viewFullPlan(activeLessonIdx);
     document.getElementById('deleteBtn').onclick = () => deletePlan(activeLessonIdx);
+    document.getElementById('editLessonNameBtn').onclick = editLessonName;
+
+    // Check iOS PWA Install Button Visibility
+    const installBtn = document.getElementById('install-pwa-btn');
+    if (installBtn && isIos() && !isStandalone()) {
+        installBtn.style.display = 'flex';
+    }
+
+    // Schedule Touch Zoom Logic
+    let touchStartDist = 0;
+    let initialScale = 1;
+    const schedImg = document.getElementById('scheduleImg');
+
+    document.getElementById('scheduleImageContainer').addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            touchStartDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            initialScale = scheduleZoom;
+        }
+    }, { passive: false });
+
+    document.getElementById('scheduleImageContainer').addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const dist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            const delta = dist / touchStartDist;
+            scheduleZoom = Math.min(Math.max(0.5, initialScale * delta), 4);
+            schedImg.style.transform = `scale(${scheduleZoom})`;
+        }
+    }, { passive: false });
 };
+
+function getMonday(d) {
+    var day = d.getDay(),
+        diff = d.getDate() - day + (day == 0 ? -6 : 1);
+    return new Date(d.getFullYear(), d.getMonth(), diff);
+}
 
 function saveAll() {
     localStorage.setItem('defterdar_v2', JSON.stringify(appData));
@@ -45,9 +102,13 @@ function updateDateDisplay() {
 
     let week = 1;
     if (appData.settings && appData.settings.schoolStart) {
-        const start = new Date(appData.settings.schoolStart);
-        const diff = today - start;
-        week = Math.ceil(diff / (7 * 24 * 60 * 60 * 1000));
+        const [y, m, d] = appData.settings.schoolStart.split('-');
+        const start = new Date(y, m - 1, d);
+        const startMonday = getMonday(start);
+        const todayMonday = getMonday(today);
+        startMonday.setHours(0, 0, 0, 0);
+        todayMonday.setHours(0, 0, 0, 0);
+        week = Math.floor((todayMonday - startMonday) / (7 * 24 * 60 * 60 * 1000)) + 1;
     }
 
     currentWeek = isNaN(week) ? 1 : Math.max(1, week);
@@ -128,9 +189,9 @@ function updateLessonDetailContent() {
 
     const item = plan.data.find(d => {
         const weekVal = String(d.w).trim();
-        if (/^\d+$/.test(weekVal)) return parseInt(weekVal) === currentWeek;
-        const regex = new RegExp(`\\b${currentWeek}\\b`);
-        return regex.test(weekVal);
+        const numMatch = weekVal.match(/\d+/);
+        if (numMatch) return parseInt(numMatch[0]) === currentWeek;
+        return false;
     });
 
     document.getElementById('detailOutcomeText').innerText = item ? item.c : 'Bu hafta için planlanmış bir kazanım bulunamadı.';
@@ -141,21 +202,37 @@ function updateLessonDetailContent() {
 
 function getWeekDates(weekNum) {
     if (!appData.settings.schoolStart) return "-";
-    const start = new Date(appData.settings.schoolStart);
+
+    // Y-m-d format parsing correctly in local timezone
+    const [y, m, d] = appData.settings.schoolStart.split('-');
+    const start = new Date(y, m - 1, d);
+
     // Move to the beginning of the selected week (Mon)
-    const mon = new Date(start);
-    mon.setDate(start.getDate() + (weekNum - 1) * 7);
+    const mon = getMonday(start);
+    mon.setDate(mon.getDate() + (weekNum - 1) * 7);
 
     // Find Friday of that week
     const fri = new Date(mon);
     fri.setDate(mon.getDate() + 4);
 
-    const opt = { day: 'numeric', month: 'short' };
+    const opt = { day: 'numeric', month: 'long' };
     return `${mon.toLocaleDateString('tr-TR', opt)} - ${fri.toLocaleDateString('tr-TR', opt)}`;
 }
 
+function editLessonName() {
+    if (activeLessonIdx === -1) return;
+    const plan = appData.plans[activeLessonIdx];
+    const newName = prompt("Hocam, dersin yeni adını yazınız:", plan.name);
+    if (newName !== null && newName.trim() !== "") {
+        plan.name = newName.trim();
+        saveAll();
+        document.getElementById('detailLessonName').innerText = plan.name;
+        renderDashboard();
+    }
+}
+
 function deletePlan(idx) {
-    if (confirm("Kral, bu dersi ve tüm planını silmek istediğine emin misin?")) {
+    if (confirm("Hocam, bu dersi ve tüm planını silmek istediğinize emin misiniz?")) {
         appData.plans.splice(idx, 1);
         saveAll();
         switchView('dashboard');
@@ -254,14 +331,20 @@ function loadSchedule() {
     const img = document.getElementById('scheduleImg');
     const placeholder = document.getElementById('schedulePlaceholder');
     const container = document.getElementById('scheduleImageContainer');
+    const controls = document.getElementById('scheduleZoomControls');
+    const changeBtn = document.getElementById('scheduleChangeBtn');
 
     if (appData.scheduleImg) {
         img.src = appData.scheduleImg;
         placeholder.classList.add('hidden');
         container.classList.remove('hidden');
+        controls.classList.remove('hidden');
+        changeBtn.classList.remove('hidden');
     } else {
         placeholder.classList.remove('hidden');
         container.classList.add('hidden');
+        controls.classList.add('hidden');
+        changeBtn.classList.add('hidden');
     }
 }
 
@@ -289,11 +372,21 @@ function applyTheme(themeName) {
 
 // 📲 PWA Installation
 async function installPWA() {
-    if (!deferredPrompt) return;
+    if (isIos()) {
+        alert("Hocam, uygulamayı cihazınıza eklemek için:\n\n1. Safari tarayıcınızın alt (veya üst) kısmında bulunan 'Paylaş' (Kare içinden yukarı ok) ikonuna dokunun.\n\n2. Çıkan menüde aşağı kaydırıp 'Ana Ekrana Ekle' (Add to Home Screen) seçeneğini seçin.\n\nYüklendikten sonra bu buton görünmeyecektir.");
+        return;
+    }
+
+    if (!deferredPrompt) {
+        alert("Hocam, cihazınız veya tarayıcınızda otomatik yükleme algılanamadı. Genellikle tarayıcı menüsünün sağ üst köşesinde (Üç nokta) 'Ana Ekrana Ekle' veya 'Uygulamayı Yükle' seçeneğinden bunu yapabilirsiniz.");
+        return;
+    }
+
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-        document.getElementById('install-pwa-btn').style.display = 'none';
+        const installBtn = document.getElementById('install-pwa-btn');
+        if (installBtn) installBtn.style.display = 'none';
     }
     deferredPrompt = null;
 }
@@ -381,7 +474,7 @@ function pickCol(idx) {
         document.getElementById('wizardGuideText').innerText = "✅ HAFTA seçildi. Şimdi KAZANIM sütununa tıklayın.";
     } else if (selectedContentCol === -1) {
         if (idx === selectedWeekCol) {
-            alert("Kral, kazanım sütunu hafta sütunuyla aynı olamaz. Başka bir sütun seç.");
+            alert("Hocam, kazanım sütunu hafta sütunuyla aynı olamaz. Lütfen başka bir sütun seçin.");
             return;
         }
         selectedContentCol = idx;
@@ -392,7 +485,7 @@ function pickCol(idx) {
 
 document.getElementById('save-final-plan').onclick = () => {
     if (selectedWeekCol === -1 || selectedContentCol === -1) {
-        alert("Kral, önce sütunları seçmelisin. Önce Hafta, sonra Kazanım.");
+        alert("Hocam, önce sütunları seçmelisiniz. Lütfen sırasıyla Hafta ve Kazanım sütunlarına tıklayın.");
         return;
     }
 
@@ -453,11 +546,15 @@ function viewFullPlan(idx) {
     if (idx === -1) idx = activeLessonIdx;
     const plan = appData.plans[idx];
     if (!plan) return;
-    document.getElementById('viewPlanTitle').innerText = plan.name;
+    const titleEl = document.getElementById('viewPlanTitle');
+    if (titleEl) titleEl.innerText = plan.name;
     let html = '<table><thead><tr style="background:var(--primary); color:white;"><th>Hafta</th><th>Tarih</th><th>Kazanım</th></tr></thead><tbody>';
 
     plan.data.forEach(d => {
-        const weekNum = parseInt(String(d.w).match(/\d+/));
+        const weekVal = String(d.w).trim();
+        const numMatch = weekVal.match(/\d+/);
+        const weekNum = numMatch ? parseInt(numMatch[0]) : null;
+
         const dateStr = weekNum ? getWeekDates(weekNum) : "-";
 
         // Highlight current week

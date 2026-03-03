@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 
 <head>
@@ -19,32 +19,58 @@
 <body data-theme="premium">
     <div class="app-container">
         <!-- Dashboard Header -->
-        <header>
-            <div style="display:flex; justify-content: space-between; align-items: center;">
+        <header style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <button onclick="activeLessonIdx=-1; switchView('dashboard', this)" class="btn-ghost"
+                    style="width: 44px; height: 44px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 24px;"
+                    title="Ana Sayfa">📚</button>
                 <div>
                     <div id="currentDateDisplay"
                         style="font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px;">
                         -</div>
-                    <h1>Defterdar</h1>
-                </div>
-                <div style="display:flex; gap:10px;">
-                    <button onclick="openSchedule()" class="btn-ghost"
-                        style="width:44px; height:44px; border-radius:15px; display:flex; align-items:center; justify-content:center;">📅</button>
-                    <button onclick="openInfo()" class="btn-ghost"
-                        style="width:44px; height:44px; border-radius:15px; display:flex; align-items:center; justify-content:center;">ℹ️</button>
+                    <h1 style="font-size: 24px;">Defterdar</h1>
+                    <div id="currentWeekDisplay"
+                        style="margin-top: 2px; font-weight: 900; font-size: 11px; color: var(--primary);">-</div>
                 </div>
             </div>
-            <div id="currentWeekDisplay"
-                style="margin-top: 15px; font-weight: 900; font-size: 13px; color: var(--primary);">-</div>
+
+            <div style="display: flex; gap: 6px;">
+                <button id="install-pwa-btn" onclick="installPWA()" class="btn-ghost"
+                    style="width: 44px; height: 44px; border-radius: 15px; display: none; align-items: center; justify-content: center; font-size: 20px; color: var(--primary);"
+                    title="Uygulamayı Cihaza Yükle">⬇️</button>
+                <button onclick="openSettings()" class="btn-ghost"
+                    style="width: 44px; height: 44px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;"
+                    title="Ayarlar (Tema)">🎨</button>
+                <button onclick="openInfo()" class="btn-ghost"
+                    style="width: 44px; height: 44px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 20px;"
+                    title="Bilgi">ℹ️</button>
+            </div>
         </header>
 
         <main id="main-content">
             <!-- Subject List -->
             <div id="view-dashboard" class="content-view">
+
+                <div class="card" onclick="openSchedule()"
+                    style="background: var(--primary-grad); color: white; cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);">
+                    <div>
+                        <h2 style="font-size: 20px; font-weight: 900; margin-bottom: 5px;">Haftalık Ders Programı</h2>
+                        <p style="font-size: 13px; opacity: 0.9;">Görmek veya yüklemek için dokun</p>
+                    </div>
+                    <div style="font-size: 32px;">📅</div>
+                </div>
+
+                <!-- Add Button Moved to Dashboard List -->
+                <button onclick="openWizard()" class="btn btn-primary"
+                    style="width: 100%; margin-bottom: 25px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <span style="font-size: 22px;">+</span> YENİ DERS/PLAN EKLE
+                </button>
+
                 <div id="dashboardEmpty" class="card hidden" style="text-align: center; padding: 60px 20px;">
                     <div style="font-size: 60px; margin-bottom: 20px;">📚</div>
                     <h2>Hoş Geldiniz</h2>
-                    <p style="color: var(--text-sub); margin-top: 10px;">Yıllık planınızı yüklemek için alttaki butona
+                    <p style="color: var(--text-sub); margin-top: 10px;">Yıllık planınızı yüklemek için yukarıdaki "Yeni
+                        Ders Ekle" butonuna
                         basın.</p>
                 </div>
                 <div id="activePlansList"></div>
@@ -54,8 +80,13 @@
             <div id="view-lesson-detail" class="content-view hidden">
                 <div class="card" style="margin-top: 5px;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div id="detailLessonName" style="font-weight: 900; font-size: 22px; color: var(--primary);">
-                            Ders Adı</div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div id="detailLessonName"
+                                style="font-weight: 900; font-size: 22px; color: var(--primary);">
+                                Ders Adı</div>
+                            <button id="editLessonNameBtn"
+                                style="background:none; border:none; font-size: 16px; cursor: pointer; color: var(--text-sub); display: flex; align-items: center; justify-content: center; padding: 4px;">✏️</button>
+                        </div>
                         <button id="deleteBtn"
                             style="background:none; border:none; font-size: 20px; cursor: pointer;">🗑️</button>
                     </div>
@@ -82,9 +113,14 @@
             <!-- Modals -->
             <!-- Full Plan Modal -->
             <div id="viewPlanModal" class="modal hidden">
-                <div class="modal-content" style="max-width: 600px;">
-                    <h2 style="margin-bottom: 20px; text-align: center;">Yıllık Plan</h2>
-                    <div id="viewPlanContent" class="table-responsive"></div>
+                <div class="modal-content"
+                    style="max-width: 600px; height: 90vh; display: flex; flex-direction: column; padding: 25px;">
+                    <h2 id="viewPlanTitle"
+                        style="margin-bottom: 15px; text-align: center; font-size: 20px; font-weight: 900;">Yıllık Plan
+                    </h2>
+                    <div class="table-responsive" style="flex: 1; overflow-y: auto;">
+                        <div id="viewPlanContent"></div>
+                    </div>
                     <button class="btn btn-primary" style="width: 100%; margin-top: 20px;"
                         onclick="closePlanView()">KAPAT</button>
                 </div>
@@ -96,12 +132,9 @@
                     <h2 style="margin-bottom: 20px;">Ayarlar</h2>
                     <div class="theme-grid">
                         <div class="theme-opt active" data-theme="premium" onclick="applyTheme('premium')">
-                            💎<span>Prm</span></div>
+                            ☀️<span>Açık</span></div>
                         <div class="theme-opt" data-theme="dark" onclick="applyTheme('dark')">🌙<span>Gece</span></div>
-                        <div class="theme-opt" data-theme="nature" onclick="applyTheme('nature')">🌿<span>Doğa</span>
-                        </div>
-                        <div class="theme-opt" data-theme="pastel" onclick="applyTheme('pastel')">🌸<span>Pastel</span>
-                        </div>
+                        <div class="theme-opt" data-theme="gold" onclick="applyTheme('gold')">🌟<span>Gold</span></div>
                     </div>
                     <div style="margin-bottom: 25px;">
                         <label style="font-size: 11px; font-weight: 800; color: var(--text-sub);">OKUL BAŞLANGIÇ
@@ -109,9 +142,6 @@
                         <input type="date" id="school-start-date"
                             style="width:100%; padding:15px; border-radius:15px; border:1px solid var(--border); background:rgba(0,0,0,0.03); margin-top:8px; font-weight:700;">
                     </div>
-                    <button id="install-pwa-btn" class="btn btn-primary"
-                        style="width:100%; margin-bottom:12px; display:none;" onclick="installPWA()">📲 CİHAZA
-                        YÜKLE</button>
                     <button class="btn btn-primary" style="width: 100%;" onclick="saveGlobalSettings()">AYARLARI
                         KAYDET</button>
                     <button class="btn btn-ghost" style="width: 100%; margin-top: 10px;"
@@ -126,11 +156,23 @@
                     <div style="font-size: 14px; color: var(--text-sub); line-height: 1.6;">
                         <p><b>Nasıl Kullanılır?</b></p>
                         <ul style="margin-top: 10px; padding-left: 20px;">
-                            <li>Aşağıdaki <b>+</b> butonuna basarak Excel veya Word planınızı yükleyin.</li>
+                            <li>Ana ekrandaki <b>+ YENİ DERS EKLE</b> butonuna basarak Excel veya Word planınızı
+                                yükleyin.</li>
                             <li>Çıkan tabloda önce <b>Hafta</b>, sonra <b>Kazanım</b> sütunlarını seçin.</li>
                             <li>Tarihe göre haftanız otomatik bulunur!</li>
                         </ul>
                     </div>
+
+                    <!-- Footer Content Moved Here -->
+                    <div
+                        style="text-align: center; margin-top: 35px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 11px; opacity: 0.8;">
+                        <a href="https://fatihpatir.github.io/web" target="_blank"
+                            style="text-decoration:none; font-weight:900; color:var(--primary); font-size:16px;">Fatih
+                            PATIR</a>
+                        <p style="font-weight:700; color:var(--text-main); margin-top:5px;">Nene Hatun MTAL</p>
+                        <p>Korkuteli / Antalya</p>
+                    </div>
+
                     <button class="btn btn-primary" style="width: 100%; margin-top: 25px;"
                         onclick="closeInfo()">ANLADIM</button>
                 </div>
@@ -176,10 +218,12 @@
 
             <!-- Schedule Modal -->
             <div id="scheduleModal" class="modal hidden">
-                <div class="modal-content" style="max-width: 600px;">
-                    <h3>Haftalık Programım</h3>
+                <div class="modal-content"
+                    style="max-width: 600px; height: 90vh; display: flex; flex-direction: column; padding: 25px;">
+                    <h3 style="text-align: center; margin-bottom: 15px;">Haftalık Programım</h3>
+
                     <div id="schedulePlaceholder"
-                        style="padding: 40px; text-align: center; border: 2px dashed var(--border); border-radius: 20px; margin: 20px 0;"
+                        style="padding: 40px; text-align: center; border: 2px dashed var(--border); border-radius: 20px; margin: 20px 0; flex: 1; display: flex; flex-direction: column; justify-content: center; cursor: pointer;"
                         onclick="document.getElementById('schedule-upload').click()">
                         <div style="font-size: 40px;">📸</div>
                         <p style="font-size: 13px; color: var(--text-sub); margin-top: 10px;">Ders programı görseli
@@ -187,18 +231,23 @@
                         <input type="file" id="schedule-upload" accept="image/*" style="display:none"
                             onchange="uploadSchedule(this)">
                     </div>
-                    <div id="scheduleImageContainer" class="hidden">
-                        <div class="zoom-container" style="border-radius: 20px;">
-                            <img id="scheduleImg">
-                        </div>
-                        <div class="zoom-controls">
-                            <button class="btn btn-ghost" onclick="zoomSchedule(-0.2)">➖</button>
-                            <button class="btn btn-ghost" onclick="resetZoomSchedule()">Sıfırla</button>
-                            <button class="btn btn-ghost" onclick="zoomSchedule(0.2)">➕</button>
-                        </div>
-                        <button class="btn btn-ghost" style="width:100%; margin-top:15px; font-size:12px;"
-                            onclick="document.getElementById('schedule-upload').click()">FOTOĞRAFI DEĞİŞTİR</button>
+
+                    <div id="scheduleImageContainer" class="hidden"
+                        style="flex: 1; overflow: auto; position: relative; border-radius: 20px; border: 1px solid var(--border); touch-action: none;">
+                        <img id="scheduleImg"
+                            style="transform-origin: top left; transition: transform 0.1s ease-out; width: 100%;">
                     </div>
+
+                    <div id="scheduleZoomControls" class="zoom-controls hidden" style="margin-top: 15px;">
+                        <button class="btn btn-ghost" onclick="zoomSchedule(-0.2)">➖</button>
+                        <button class="btn btn-ghost" onclick="resetZoomSchedule()">Sıfırla</button>
+                        <button class="btn btn-ghost" onclick="zoomSchedule(0.2)">➕</button>
+                    </div>
+
+                    <button id="scheduleChangeBtn" class="btn btn-ghost hidden"
+                        style="width:100%; margin-top:15px; font-size:12px;"
+                        onclick="document.getElementById('schedule-upload').click()">FOTOĞRAFI DEĞİŞTİR</button>
+
                     <button class="btn btn-ghost" style="width: 100%; margin-top: 15px;"
                         onclick="closeSchedule()">KAPAT</button>
                 </div>
@@ -206,21 +255,7 @@
 
         </main>
 
-        <footer
-            style="text-align: center; padding: 20px; font-size: 11px; opacity: 0.7; margin-top: auto; margin-bottom: 90px; width: 100%;">
-            <a href="https://fatihpatir.github.io/web" target="_blank"
-                style="text-decoration:none; font-weight:900; color:var(--primary); font-size:16px;">Fatih PATIR</a>
-            <p style="font-weight:700; color:var(--text-main); margin-top:3px;">Nene Hatun MTAL - Korkuteli / Antalya
-            </p>
-        </footer>
-
-        <!-- Floating Nav Bar -->
-        <nav class="bottom-nav">
-            <div class="nav-item active" onclick="activeLessonIdx=-1; switchView('dashboard', this)" title="Ana Sayfa">
-                📚</div>
-            <div id="nav-fab" onclick="openWizard()">+</div>
-            <div class="nav-item" onclick="openSettings()" title="Ayarlar (Tema)">🎨</div>
-        </nav>
+        </main>
     </div>
 
     <script src="app.js"></script>
