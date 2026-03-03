@@ -18,7 +18,7 @@ if (appData.scheduleImg) {
 }
 
 if (!localStorage.getItem('defterdar_16sept_fix_v2')) {
-    appData.settings.schoolStart = '2024-09-16';
+    appData.settings.schoolStart = '2025-09-08';
     localStorage.setItem('defterdar_v2', JSON.stringify(appData));
     localStorage.setItem('defterdar_16sept_fix_v2', 'true');
 }
